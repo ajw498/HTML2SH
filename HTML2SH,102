@@ -1,7 +1,8 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 # Version 0.01 13/11/99
-# $Revision: 1.7 $
+# $Revision: 1.8 $
+# $Date: 2000/02/02 17:54:54 $
 
 #Default files to use - can be overridden by command line arguments
 $tempdir="temp";
@@ -11,7 +12,7 @@ $outfile="$tempdir/!root";
 #Do we include images or use the ALT text instead
 $images="no";
 
-$changefsi="<ChangeFSI\$Dir>.ChangeFSI";
+$changefsi='<ChangeFSI$Dir>.ChangeFSI';
 $changefsiflags="28r -nomode";
 $spritename="p28r";
 
@@ -254,18 +255,14 @@ sub replace {
 				$link="=>#TAG $1>";
 			#Must be a relative file link
 			} else {
-print "Prefix: $prefix\n";
 				$link=$prefix.$link;
 				$link=~s/\/$/\/!root/;
 				while ($link=~s/([^\/\.])+\/\.\.\///) {}; #Remove dir/../
 				$link=~s/^\.\///; #Remove . at beggining of line
 				$link=~s/[^\.]+\.\///g; #?
-print "Link1: $link\n";
 				$link=~s/^([^\?]*)\?(.*)$/$1/i; #Remove parameters
-print "Link2: $link\n";
 				$linkonly=$link;
 				$linkonly=~s/^([^\#]*)\#(.*)$/$1/i; #Remove tags
-print "Link3: $linkonly\n";
 				push @files,$linkonly;
 				foreach (@renametoroot) {$link=~s/$_$/!Root/i;}
 				$link=munge($link);
@@ -388,7 +385,7 @@ if ($prefix ne "") {die "Prefix is $Prefix from file $infile\n";}
 			#Replace named characters
 			s/(\&\w+\;)/getnamedchar($1)/eig;
 			#Remove tags inside anchors (StrongHelp does not like these)
-			while (s/<([^\{\}>]*)\{.*\}([^>]*)=>/<$1$2=>/) {}
+			while (s/<([^\{\}>]*)\{[^\{\}]*\}([^>]*)=>/<$1$2=>/) {}
 			print out;
 		}
 	} else {
