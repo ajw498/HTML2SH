@@ -1,3 +1,32 @@
+/*
+	StrongCopy - Copy files from a directory to a stronghelp file
+	© Alex Waugh 2002
+
+	$Id: strongcopy.c,v 1.3 2002/07/15 20:05:24 ajw Exp $
+
+	Usage: strongcreate [-v] [-o outputfile] [inputdir]
+
+	Bugs:
+	The datestamp of all files is set to 1/1/1900 when run on a non-RISC OS system
+	Will not work on big-endian machines
+	Makes assumtions about structure packing/alignment
+
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+*/
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -8,11 +37,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+
 #ifdef __riscos
 #include <unixlib/local.h>
 #include <kernel.h>
 #include <swis.h>
 #endif
+
 struct header {
 	char magic[4];
 	int rootblocksize;
@@ -30,8 +61,8 @@ struct header {
 
 struct directory_block {
 	char magic[4];
-	int size;
-	int used; /*?*/
+	int size; /* Size of directory block */
+	int used; /* Amount within directory block that is actually used */
 };
 
 struct directory_entry {
@@ -41,7 +72,7 @@ struct directory_entry {
 	int length;
 	int flags;
 	int reserved;
-	/*char name[]*/
+	/* char name[] */
 };
 
 struct data_block {
