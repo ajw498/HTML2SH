@@ -2,7 +2,7 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Id: HTML2SH,102,v 1.15 2002/07/15 17:33:07 ajw Exp $
+# $Id: HTML2SH,102,v 1.16 2002/11/06 22:22:58 ajw Exp $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -451,7 +451,7 @@ sub processfile {
 			my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
 			system "copy $tempinfile $tempoutfile ~C~DF~L~N~P~QR~S~TV";
 		} else {
-			system "echo cp $infile $outfile";
+			system "cp $infile $outfile";
 		}
 	}
 	close out;
