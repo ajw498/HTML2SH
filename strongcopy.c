@@ -165,7 +165,7 @@ int add_dir(const char *dirname, int *dirlength)
 				char buffer[FILENAME_MAX + 1];
 #endif
 				char *comma;
-				int filetype;
+				int filetype = 0xFFF;
 
 				comma = strchr(nametouse, ',');
 				if (comma) {
