@@ -1,8 +1,8 @@
+#!/usr/bin/perl
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Revision: 1.14 $
-# $Date: 2002/07/14 22:45:28 $
+# $Id: HTML2SH,102,v 1.15 2002/07/15 17:33:07 ajw Exp $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -61,9 +61,6 @@ $spritename="p28r";
 #To stop a tag from being processed add a # character to the beggining of the appropriate line
 #Tags with a single * are processed further by the replace subroutine
 %options=(
-# MEP - added </td> and </th> converting to space and </tr> to \n to cope
-# with really simple tables slightly better, e.g. the Prev Next links in PHP
-# manual
                 "/td"           => " ",
                 "/th"           => " ",
                 "/tr"           => "\n",
@@ -380,8 +377,6 @@ sub processfile {
 	undef @temp;
 	while ($temp=~s/(.*)\/[^\/]*$/$1/) { push @test,$1 };
 	while (@test) {
-		#$dir=munge(pop @test);
-		#system "cdir $dir";
 		$dir=pop @test;
 		mkdir $dir,0x1FF;
 	}
@@ -456,11 +451,10 @@ sub processfile {
 			my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
 			system "copy $tempinfile $tempoutfile ~C~DF~L~N~P~QR~S~TV";
 		} else {
-			system "cp $infile $outfile";
+			system "echo cp $infile $outfile";
 		}
 	}
 	close out;
-	print "Finished processing $infile\n";
 }
 
 #Read in whole file in one go - removes problems with tags spanning more than one line
@@ -482,8 +476,7 @@ if ($^O eq "riscos") {
 }
 
 #Create temporary directory
-#system "cdir $tempdir";
-mkdir($tempdir,0x1FF); 
+mkdir($tempdir,0x1FF);
 
 #Process the main file
 processfile($infile);
@@ -491,14 +484,6 @@ while (@files) {
 	#Process any file linked to from main file
 	processfile(pop @files);
 }
+
 print "All files processed\n";
-if ($^O eq "riscos") {
-	print "Creating manual...\n";
-	system "StrongCreate Manual";
-	system "copy $tempdir.* Manual.* ~C~DF~L~N~P~QR~S~TV";
-	print "Manual created\n";
-	print "Clean copying...\n";
-	system "<StrongHelp$Dir>.Utilities.CleanCopy Manual";
-	print "Done\n";
-	system "Filer_Run Manual";
-}
+
