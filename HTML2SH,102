@@ -1,15 +1,32 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
-# Version 0.01 13/11/99
-# $Revision: 1.8 $
-# $Date: 2000/02/02 17:54:54 $
+#
+# $Revision: 1.9 $
+# $Date: 2000/02/06 21:23:09 $
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#Default files to use - can be overridden by command line arguments
+
+#Default file to use - can be overridden by command line argument
+$infile="index.html";
+
+#Temporary directory to use
 $tempdir="temp";
-$infile="manual.html";
-$outfile="$tempdir/!root";
 
 #Do we include images or use the ALT text instead
+#Images do not currently work
 $images="no";
 
 $changefsi='<ChangeFSI$Dir>.ChangeFSI';
@@ -29,7 +46,6 @@ $spritename="p28r";
 @imageextensions=(
 		".jpeg",
 		".gif",
-		".png",
 );
 
 #Filenames to treat as default pages
@@ -41,7 +57,7 @@ $spritename="p28r";
 		"manual.html",
 );
 
-#A list of what tags and how to replace them
+#A list of tags and how to replace them
 #To stop a tag from being processed add a # character to the beggining of the appropriate line
 #Tags with a single * are processed further by the replace subroutine
 %options=(
@@ -222,9 +238,9 @@ sub munge {
 	my ($filename)=$_[0];
 	$filename=~s/\.\./\^/g;
 	$filename=~s/^\.\///g;
-	$filename=~s/\//|/g;
+	$filename=~s/\// /g;
 	$filename=~s/\./\//g;
-	$filename=~s/\|/\./g;
+	$filename=~s/\ /\./g;
 	return $filename;
 }
 
@@ -325,10 +341,6 @@ sub processfile {
 	my ($infile,$outfile)=@_;
 	$outfile="$tempdir/$infile" if not defined $outfile;
 	my ($html,$image)=0,0;
-        #Remove any tag after the filename
-if ($infile=~m/\?/) {die "Asked to process $infile";}
-if ($infile=~m/\#/) {die "Asked to process $infile";}
-#        $infile=~s/([^#\?]*)[#\?].*/$1/g;
 	#Rename indexes to !Roots
 	foreach (@renametoroot) {$outfile=~s/$_$/!Root/i;}
 	#Check that we have not already processed this file
@@ -338,7 +350,7 @@ if ($infile=~m/\#/) {die "Asked to process $infile";}
 		print "Cannot find file $infile, skipping\n";
 		return;
 	}
-	#Check for a suitable file extension (so we dont process .zip files or images etc.)
+	#Check for a suitable file extension (so we dont process .zip files etc.)
 	my ($temp)=$infile;
 	foreach (@htmlextensions) {
 		$html=1 if $temp=~m/$_$/i;
@@ -362,7 +374,6 @@ if ($infile=~m/\#/) {die "Asked to process $infile";}
 	#Get the pathname (without leafname) for this file
 	$infile=~m/(.*\/)[^\/]*$/;
 	$prefix=$1;
-if ($prefix ne "") {die "Prefix is $Prefix from file $infile\n";}
 	if ($image) {
 		my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
 		system "$changefsi $tempinfile $tempoutfile $changefsiflags";
