@@ -258,6 +258,10 @@ int add_dir(const char *dirname, int *dirlength)
 	exit(1); \
 } while (0);
 
+#ifdef __riscos
+int __riscosify_control = __RISCOSIFY_FILETYPE_EXT;
+#endif
+
 int main(int argc, char *argv[])
 {
 	struct header headerblock;
@@ -266,10 +270,6 @@ int main(int argc, char *argv[])
 	char *outfile = "Manual";
 	char *indir = ".";
 	int optch;
-
-#ifdef __riscos
-	__riscosify_control |= __RISCOSIFY_FILETYPE_EXT;
-#endif
 
 	while ((optch = getopt(argc, argv, optstring)) != -1) {
 		switch (optch) {
