@@ -1,7 +1,7 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 # Version 0.01 13/11/99
-# $Revision: 1.4 $
+# $Revision: 1.5 $
 
 #Default files to use - can be overridden by command line arguments
 $tempdir="temp";
@@ -16,6 +16,13 @@ $outfile="$tempdir/!root";
 		".htm",
 );
 
+#Filenames to treat as default pages
+@renametoroot=(
+		"index.shtml",
+		"index.html",
+		"index.htm",
+);
+
 #A list of what tags and how to replace them
 #To stop a tag from being processed add a # character to the beggining of the appropriate line
 #Tags with a single * are processed further by the replace subroutine
@@ -24,14 +31,16 @@ $outfile="$tempdir/!root";
 		"/i"		=> "{/}",
 		"b"		=> "{*}",
 		"/b"		=> "{*}",
+		"strong"	=> "{*}",
+		"/strong"	=> "{*}",
 		"em"		=> "{/}",
 		"/em"		=> "{/}",
-		"h1"		=> "\n{fh1}",
-		"h2"		=> "\n{fh2}",
-		"h3"		=> "\n{fh3}",
-		"h4"		=> "\n{fh4}",
-		"h5"		=> "\n{fh5}",
-		"h6"		=> "\n{fh6}",
+		"h1"		=> "\n\n{fh1}",
+		"h2"		=> "\n\n{fh2}",
+		"h3"		=> "\n\n{fh3}",
+		"h4"		=> "\n\n{fh4}",
+		"h5"		=> "\n\n{fh5}",
+		"h6"		=> "\n\n{fh6}",
 		"/h1"		=> "{f}\n",
 		"/h2"		=> "{f}\n",
 		"/h3"		=> "{f}\n",
@@ -41,12 +50,34 @@ $outfile="$tempdir/!root";
 		"title"		=> "",
 		"/title"	=> "\n",
 		"br"		=> "\n",
+		"hr"		=> "{line}",
+		"ol"		=> "{indent +1}\n",
+		"ul"		=> "{indent +1}\n",
+		"li"		=> "\n",
+		"/ol"		=> "{indent}",
+		"/ul"		=> "{indent}",
+		"pre"		=> "{fcode}",
+		"/pre"		=> "{f}",
+#		""		=> "",
 		"center"	=> "{align centre}",
 		"/center"	=> "{align}",
 		"a"		=> "*",
 		"/a"		=> "*",
 		"p"		=> "*",
 		"/p"		=> "*",
+	);
+
+#A list of named characters and their replacements
+#To stop a character from being processed add a # character to the beggining of the appropriate line
+%chars=(
+		"&lt;"		=> "\\<",
+		"&gt;"		=> ">",
+		"&amp;"		=> "&",
+		"&quot;"	=> "\"",
+		"&nbsp;"	=> " ",
+		"&pound;"	=> "£",
+#		""		=> "",
+#		""		=> "",
 	);
 
 #Munge Unixy filenames into a suitable form for RISC OS
@@ -58,6 +89,13 @@ sub munge {
 	$filename=~s/\./\//g;
 	$filename=~s/\|/\./g;
 	return $filename;
+}
+
+#Replace a named character with its value
+sub getnamedchar {
+	my ($charname)=@_;
+	return $charname if not exists $chars{$charname};
+	return $chars{$charname};
 }
 
 #Replace a HTML tag with a suitable StrongHelp tag
@@ -72,18 +110,30 @@ sub replace {
 		$link="";
 		if (exists $attributes{"href"}) {
 			$link=$attributes{"href"};
-			if ($link=~m/^(http:)|(https:)|(ftp:)|(mailto:)|(gopher:)|(telnet:)|(finger:)/i) {
+			#Check for external links
+			if ($link=~m/^(http:)|(https:)|(ftp:)|(mailto:)|(gopher:)|(news:)|(telnet:)|(finger:)/i) {
 				$link="=>#URL $link>";
+			#Check for in-document links
+			} elsif ($link=~m/^\#(.*)/) {
+				$link="=>#TAG $1>";
+			#Must be a relative file link
 			} else {
+				$link=$prefix.$link;
+				$old=$link;
 				$link=~s/\/$/\/!root/;
-				push @files,$prefix.$link;
+				while ($link=~s/([^\/\.])+\/\.\.\///) {};
+				$link=~s/^\.\///;
+				$link=~s/[^\.]+\.\///g;
+				print "$old\n$link\n" if $old ne $link;
+				push @files,$link;
+				foreach (@renametoroot) {$link=~s/$_$/!Root/;}
 				$link=munge($link);
 				$link="=>$link>";
 			}
 			return "<";
+		} elsif (exists $attributes{"name"}) {
+			return "{tag $attributes{'name'}}";
 		}
-#		$link=$attributes{"name"} if exists $attributes{"name"};
-#		print "$link\n";
 		return "";
 	} elsif ($tagtype eq "/a") {
 		return $link;
@@ -128,21 +178,30 @@ sub processfile {
 	my ($infile,$outfile)=@_;
 	$outfile="$tempdir/$infile" if not defined $outfile;
 	my ($found)=0;
+        #Remove any tag after the filename
+        $infile=~s/([^#]*)#.*/$1/;
 	#Check for a suitable file extension (so we dont process .zip files or images etc.)
 	my ($temp)=$infile;
 	foreach (@fileextensions) {
-		$found=1 if $temp=~m/$_(#.*)?$/;
+		$found=1 if $temp=~m/$_$/;
 	}
+	#If it does not have a suitable extension, check to see if it has no extension
 	$found=not $temp=~m/[^\/]*\.[^\/]*$/ if not $found;
 	if (not $found) {
 		print "Ignoring file $infile: wrong file extension\n";
 		return;
 	}
+	#Rename indexes to !Roots
+	foreach (@renametoroot) {$outfile=~s/$_$/!Root/;}
+	#Check that we have not already processed this file
+	return if -e $outfile;
+	#Check we can find the file
 	if (not -e $infile) {
 		print "Cannot find file $infile, skipping\n";
 		return;
 	}
 	print "Processing file $infile...\n";
+	#Create any subdirectories needed
 	$temp=$outfile;
 	undef @temp;
 	while ($temp=~s/(.*)\/[^\/]*$/$1/) { push @test,$1 };
@@ -150,18 +209,24 @@ sub processfile {
 		$dir=munge(pop @test);
 		system "cdir $dir";
 	}
-	$outfile=~m/(.*\/)[^\/]*$/;
+	#Get the pathname (without leafname) for this file
+	$infile=~m/(.*\/)[^\/]*$/;
 	$prefix=$1;
-	open("out",">".$outfile) or die "Can't open $outfile: $!\n";
+	open("out",">".$outfile) or die "Can't create $outfile: $!\n";
 	open($handle,$infile);
 	while (<$handle>) {
-		#Remove excess whitespace
-		s/\n/ /g;
-		s/  / /g;
+		#Remove excess whitespace (except when enclosed by <pre>...</pre> tags)
+		s/(((<pre>).*(<\/pre>){1}?)*)\n(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
+		s/(((<pre>).*(<\/pre>){1}?)*)\t(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
+		s/(((<pre>).*(<\/pre>){1}?)*)  (((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
+		#Replace tags
 		s/(<(\s*|!\W*)(\/?\w+)([^<>]*)>)/getattr($1,$3,$4)/eig;
 		#Remove more excess whitespace
-		while (s/\n\n\n/\n\n/g) {}
-		s/^\n//g;
+		while (s/\n\n\n/\n\n/) {}
+		s/^ +//mg;
+		s/^({[^{}]*}) +/$1/mg;
+		#Replace named characters
+		s/(\&\w+\;)/getnamedchar($1)/eig;
 		print out;
 	}
 	close out;
@@ -181,8 +246,8 @@ $handle="currentfile";
 #Check StrongHelp is loaded
 system "Set HTML2SH$Found 0";
 system "RMEnsure StrongHelp 2.70 Set HTML2SH$Found 2";
-system "RMEnsure StrongHelp 2.00 Set HTML2SH$Found 1";
-die "Please load StrongHelp 2.00 or later and try again\n" if $ENV{"HTML2SH$Found"} eq "1";
+system "RMEnsure StrongHelp 2.20 Set HTML2SH$Found 1";
+die "Please load StrongHelp 2.20 or later and try again\n" if $ENV{"HTML2SH$Found"} eq "1";
 print "You do not have the latest version of StrongHelp, I suggest you upgrade\n" if $ENV{"HTML2SH$Found"} eq "2";
 system "Unset HTML2SH$Found";
 
@@ -190,7 +255,7 @@ system "Unset HTML2SH$Found";
 system "cdir $tempdir";
 
 #Process the main file
-processfile($infile,$outfile);
+processfile($infile);
 while (@files) {
 	#Process any file linked to from main file
 	processfile(pop @files);
