@@ -1,8 +1,8 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Revision: 1.11 $
-# $Date: 2000/12/27 23:46:14 $
+# $Revision: 1.12 $
+# $Date: 2000/12/28 22:26:50 $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -283,7 +283,7 @@ sub replace {
 				$link=~s/^\.\///; #Remove . at beggining of line
 				$link=~s/[^\.]+\.\///g; #?
 				$link=~s/^([^\?]*)\?(.*)$/$1/i; #Remove parameters
-				foreach (@renametoroot) {$link=~s/$_([\?\#].*)?$/!Root$1/i;}
+				foreach (@renametoroot) {$link=~s/^(.*\/){0,1}$_([\?\#].*)?$/$1!Root$2/i;}
 				$linkonly=$link;
 				$linkonly=~s/^([^\#]*)\#(.*)$/$1/i; #Remove tags
 				push @files,$linkonly;
@@ -348,7 +348,7 @@ sub processfile {
 	$outfile="$tempdir/$infile" if not defined $outfile;
 	my ($html,$image)=0,0;
 	#Rename indexes to !Roots
-	foreach (@renametoroot) {$outfile=~s/$_$/!Root/i;}
+	foreach (@renametoroot) {$outfile=~s/^(.*\/){0,1}$_$/$1!Root/i;}
 	#Check that we have not already processed this file
 	return if -e $outfile;
 	#Check we can find the file
@@ -413,7 +413,7 @@ sub processfile {
 		system "copy $tempinfile $tempoutfile ~C~DF~L~N~P~QR~S~TV";
 	}
 	close out;
-	print "Finshed processing $infile\n";
+	print "Finished processing $infile\n";
 }
 
 #Read in whole file in one go - removes problems with tags spanning more than one line
@@ -448,4 +448,7 @@ print "Creating manual...\n";
 system "StrongCreate Manual";
 system "copy $tempdir.* Manual.* ~C~DF~L~N~P~QR~S~TV";
 print "Manual created\n";
+print "Clean copying...\n";
+system "<StrongHelp$Dir>.Utilities.CleanCopy Manual";
+print "Done\n";
 system "Filer_Run Manual";
