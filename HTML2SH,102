@@ -1,8 +1,8 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Revision: 1.9 $
-# $Date: 2000/02/06 21:23:09 $
+# $Revision: 1.10 $
+# $Date: 2000/11/19 20:41:21 $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -272,15 +272,15 @@ sub replace {
 			#Must be a relative file link
 			} else {
 				$link=$prefix.$link;
-				$link=~s/\/$/\/!root/;
+				$link=~s/\/([\?\#].*)?$/\/!root$1/;
 				while ($link=~s/([^\/\.])+\/\.\.\///) {}; #Remove dir/../
 				$link=~s/^\.\///; #Remove . at beggining of line
 				$link=~s/[^\.]+\.\///g; #?
 				$link=~s/^([^\?]*)\?(.*)$/$1/i; #Remove parameters
+				foreach (@renametoroot) {$link=~s/$_([\?\#].*)?$/!Root$1/i;}
 				$linkonly=$link;
 				$linkonly=~s/^([^\#]*)\#(.*)$/$1/i; #Remove tags
 				push @files,$linkonly;
-				foreach (@renametoroot) {$link=~s/$_$/!Root/i;}
 				$link=munge($link);
 				$link="=>$link>";
 			}
