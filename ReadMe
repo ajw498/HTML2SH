@@ -1,0 +1,46 @@
+HTML2SH is a perl script to convert HTML pages to a StrongHelp manual.
+
+What it can convert:
+Simple tags like <B>,<I>,<EM>,<PRE>,<H1> etc.
+Links between pages and within that same page
+Lists
+Alignment
+Named characters
+Images (Currently it just uses the ALT text)
+
+What it can't do:
+Frames
+Tables
+Image maps
+Forms
+Broken HTML
+Javascript
+The cooking
+The washing up
+Any other fancy stuff
+
+Sometimes it does not get the layout perfect, but it is usually readable.
+It is most suitable for converting technical manuals and documentation,
+for example the PHP manual.
+
+
+Using it
+~~~~~~~~
+Set the Current Selected Directory to the directory containing the HTML
+If the file to convert is called index.html then just double click on HTML2SH
+Otherwise at the command prompt type
+*Run ADFS::4.$.path.HTML2SH filetoconvert
+where path is the full pathname to HTML2SH
+It will then convert the file, and any files linked to from the file.
+You should ensure that the wimpslot is set larger than the largest file to convert.
+
+
+HTML2SH is distributed under the GNU General Public License.
+
+Any updates should be available from http://www.ecs.soton.ac.uk/~ajw498/
+
+Any comments or bug reports are welcome
+
+6/2/00
+
+Alex Waugh  mailto:ajw498@ecs.soton.ac.uk
