@@ -34,13 +34,21 @@ where path is the full pathname to HTML2SH
 It will then convert the file, and any files linked to from the file.
 You should ensure that the wimpslot is set larger than the largest file to convert.
 
+History
+~~~~~~~
+Version 1.00 6-Feb-00
+First release
 
+Version 1.01 27-Dec-00
+Added support for some &#60; type characters as used in the PHP manual
+Now escapes \ and { if present in the HTML
+
+ 
 HTML2SH is distributed under the GNU General Public License.
 
 Any updates should be available from http://www.ecs.soton.ac.uk/~ajw498/
 
 Any comments or bug reports are welcome
 
-6/2/00
 
 Alex Waugh  mailto:ajw498@ecs.soton.ac.uk

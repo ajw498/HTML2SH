@@ -1,8 +1,8 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Revision: 1.10 $
-# $Date: 2000/11/19 20:41:21 $
+# $Revision: 1.11 $
+# $Date: 2000/12/27 23:46:14 $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -231,6 +231,12 @@ $spritename="p28r";
 		"&rdquo;"  	=> "•",
 		"&lsquo;"  	=> "",
 		"&rsquo;"  	=> "‘",
+# Some numbered entities that occour in the PHP manual quite a lot
+		"&\#13;"        => "\n",
+		"&\#38;"        => "&",
+		"&\#60;"        => "\\<",
+		"&\#62;"        => ">",
+		"&\#8212;"      => "",
 	);
 
 #Munge Unixy filenames into a suitable form for RISC OS
@@ -381,6 +387,9 @@ sub processfile {
 		open("out",">".$outfile) or die "Can't create $outfile: $!\n";
 		open($handle,$infile);
 		while (<$handle>) {
+			#Escape characters that StrongHelp needs escaping
+			s/\\/\\\\/g;
+			s/\{/\\\{/g;
 			#Remove excess whitespace (except when enclosed by <pre>...</pre> tags)
 			s/(((<pre>).*(<\/pre>){1}?)*)\n(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
 			s/(((<pre>).*(<\/pre>){1}?)*)\t(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
@@ -394,7 +403,7 @@ sub processfile {
 			s/^ +//mg;
 			s/^(\{[^\{\}]*\}) +/$1/mg;
 			#Replace named characters
-			s/(\&\w+\;)/getnamedchar($1)/eig;
+			s/(\&#{0,1}\w+\;)/getnamedchar($1)/eig;
 			#Remove tags inside anchors (StrongHelp does not like these)
 			while (s/<([^\{\}>]*)\{[^\{\}]*\}([^>]*)=>/<$1$2=>/) {}
 			print out;
