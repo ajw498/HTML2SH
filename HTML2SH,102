@@ -1,7 +1,7 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 # Version 0.01 13/11/99
-# $Revision: 1.5 $
+# $Revision: 1.6 $
 
 #Default files to use - can be overridden by command line arguments
 $tempdir="temp";
@@ -58,9 +58,21 @@ $outfile="$tempdir/!root";
 		"/ul"		=> "{indent}",
 		"pre"		=> "{fcode}",
 		"/pre"		=> "{f}",
-#		""		=> "",
+		"var"		=> "{fcode}",
+		"/var"		=> "{f}",
+		"tt"		=> "{fcode}",
+		"/tt"		=> "{f}",
+		"code"		=> "{fcode}",
+		"/code"		=> "{f}",
+		"cite"		=> "{fcite}",
+		"/cite"		=> "{fcite}",
+		"kbd"		=> "{fcode}",
+		"/kbd"		=> "{f}",
+		"dfn"		=> "{/}",
+		"/dfn"		=> "{/}",
 		"center"	=> "{align centre}",
 		"/center"	=> "{align}",
+		"img"		=> "*",
 		"a"		=> "*",
 		"/a"		=> "*",
 		"p"		=> "*",
@@ -76,6 +88,10 @@ $outfile="$tempdir/!root";
 		"&quot;"	=> "\"",
 		"&nbsp;"	=> " ",
 		"&pound;"	=> "£",
+		"&copy"		=> "©",
+		"&trade"	=> "",
+		"&reg"		=> "®",
+#		""		=> "",
 #		""		=> "",
 #		""		=> "",
 	);
