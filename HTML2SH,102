@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+
+$infile="index.pre";
+$outfile="index.shtml";
+#Files can be overridden by command line arguments
+
+%options=(	"include"          => 1,
+		"fsize"            => 1,
+		"title"            => 1,
+		"fname"            => 1,
+		"config"           => 0,
+		"template"         => 1,
+		"templateifexists" => 1,
+	);
+
+$attribute='((\s+)(\w+)="([^"]*)")?';
+
+sub replace {
+	my ($handle,$command,$title,$fname,%attributes)=@_;
+	$handle++;
+	$handle=$handle."0";
+	local $_;
+	if ($command eq "include" and $options{"include"}) {
+		openfile($handle,$attributes{"file"});
+		local $_;
+		while (<$handle>) {
+			s/(.*)/printfile($handle,$title,$fname,$1)/eig;
+			print out;
+		}
+		close $handle;
+		return "";
+	} elsif ($command eq "template" and $options{"template"}) {
+		openfile($handle,$attributes{"file"});
+		local $_;
+		while (<$handle>) {
+			s/(.*)/printfile($handle,$attributes{"title"},$attributes{"fname"},$1)/eig;
+			print out;
+		}
+		close $handle;
+		return "";
+	} elsif ($command eq "templateifexists" and $options{"templateifexists"}) {
+		if (-e $attributes{"test"}) {
+			openfile($handle,$attributes{"file"});
+			local $_;
+			while (<$handle>) {
+				s/(.*)/printfile($handle,$attributes{"title"},$attributes{"fname"},$1)/eig;
+			print out;
+			}
+			close $handle;
+		}
+		return "";
+	} elsif ($command eq "fsize" and $options{"fsize"}) {
+		my @stats;
+		@stats=stat($attributes{"file"});
+		return sprintf "%dK",$stats[7]/1024;
+	} elsif ($command eq "title" and $options{"title"}) {
+		return $title;
+	} elsif ($command eq "fname" and $options{"fname"}) {
+		return $fname;
+	} else {
+		return "$1";
+	}
+}
+
+sub openfile {
+	my ($filename)=$_[1];
+	if (!-e $filename) {
+		push @rcs,$filename;
+		system "co $filename";
+	}
+	open($_[0],$filename) or die "Can't open $filename: $!\n";
+}
+
+sub printfile {
+	my ($handle,$title,$fname)=@_;
+	local $_;
+	$_=$_[3];
+	while (s/(<!--#[^<>]*)((<!--[^<>]*-->)([^<>]*)){1}(.*-->)/$1.printfile($handle,$title,$fname,$3).$4.$5/eig) {}
+	s/(<!--#(\w+)$attribute$attribute$attribute$attribute\s*-->)/replace($handle,$2,$title,$fname,$5,$6,$9,$10,$13,$14,$17,$18)/eig;
+	return "$_";
+}
+
+$infile=$ARGV[0] if $ARGV[0] ne "";
+$outfile=$ARGV[1] if $ARGV[1] ne "";
+
+print "Processing file...\n";
+open(out,">".$outfile) or die "Can't open $outfile: $!\n";
+printfile("fh00","","","<!--#template file=\"$infile\"-->");
+close out;
+foreach $filename (@rcs) {
+	print "Removing $filename\n";
+	system "rm -f $filename";
+}
+
+
+#system "settype $outfile html" if $^O eq "riscos"; filename munging stops this from working
+
+print "Done\n";
