@@ -1,98 +1,193 @@
 #!/usr/bin/perl
+# HTML to StrongHelp Perl script
+# © Alex Waugh 1999
+# Version 0.01 13/11/99
 
-$infile="index.pre";
-$outfile="index.shtml";
-#Files can be overridden by command line arguments
+#Default files to use - can be overridden by command line arguments
+$tempdir="temp";
+$infile="index.shtml";
+$outfile="$tempdir/!root";
 
-%options=(	"include"          => 1,
-		"fsize"            => 1,
-		"title"            => 1,
-		"fname"            => 1,
-		"config"           => 0,
-		"template"         => 1,
-		"templateifexists" => 1,
+#Only process files with the following file extensions or no extension
+#You can add or remove extensions from the list
+@fileextensions=(
+		".shtml",
+		".html",
+		".htm",
+);
+
+#A list of what tags and how to replace them
+#To stop a tag from being processed add a # character to the beggining of the appropriate line
+#Tags with a single * are processed further by the replace subroutine
+%options=(
+		"i"		=> "{/}",
+		"/i"		=> "{/}",
+		"b"		=> "{*}",
+		"/b"		=> "{*}",
+		"em"		=> "{/}",
+		"/em"		=> "{/}",
+		"h1"		=> "\n{fh1}",
+		"h2"		=> "\n{fh2}",
+		"h3"		=> "\n{fh3}",
+		"h4"		=> "\n{fh4}",
+		"h5"		=> "\n{fh5}",
+		"h6"		=> "\n{fh6}",
+		"/h1"		=> "{f}\n",
+		"/h2"		=> "{f}\n",
+		"/h3"		=> "{f}\n",
+		"/h4"		=> "{f}\n",
+		"/h5"		=> "{f}\n",
+		"/h6"		=> "{f}\n",
+		"title"		=> "",
+		"/title"	=> "\n",
+		"br"		=> "\n",
+		"center"	=> "{align centre}",
+		"/center"	=> "{align}",
+		"a"		=> "*",
+		"/a"		=> "*",
+		"p"		=> "*",
+		"/p"		=> "*",
 	);
 
-$attribute='((\s+)(\w+)="([^"]*)")?';
+#Munge Unixy filenames into a suitable form for RISC OS
+sub munge {
+	my ($filename)=$_[0];
+	$filename=~s/\.\./\^/g;
+	$filename=~s/^\.\///g;
+	$filename=~s/\//|/g;
+	$filename=~s/\./\//g;
+	$filename=~s/\|/\./g;
+	return $filename;
+}
 
+#Replace a HTML tag with a suitable StrongHelp tag
 sub replace {
-	my ($handle,$command,$title,$fname,%attributes)=@_;
-	$handle++;
-	$handle=$handle."0";
-	local $_;
-	if ($command eq "include" and $options{"include"}) {
-		openfile($handle,$attributes{"file"});
-		local $_;
-		while (<$handle>) {
-			s/(.*)/printfile($handle,$title,$fname,$1)/eig;
-			print out;
-		}
-		close $handle;
-		return "";
-	} elsif ($command eq "template" and $options{"template"}) {
-		openfile($handle,$attributes{"file"});
-		local $_;
-		while (<$handle>) {
-			s/(.*)/printfile($handle,$attributes{"title"},$attributes{"fname"},$1)/eig;
-			print out;
-		}
-		close $handle;
-		return "";
-	} elsif ($command eq "templateifexists" and $options{"templateifexists"}) {
-		if (-e $attributes{"test"}) {
-			openfile($handle,$attributes{"file"});
-			local $_;
-			while (<$handle>) {
-				s/(.*)/printfile($handle,$attributes{"title"},$attributes{"fname"},$1)/eig;
-			print out;
+	my ($wholetag,$tagtype,%attributes)=@_;
+	#Remove all unknown tags
+	return "" if not defined $options{$tagtype};
+	#Return replacement tag if a simple translation is possible
+	return $options{$tagtype} if $options{$tagtype} ne "*";
+	#More complex processing must be needed
+	if ($tagtype eq "a") {
+		$link="";
+		if (exists $attributes{"href"}) {
+			$link=$attributes{"href"};
+			if ($link=~m/^(http:)|(https:)|(ftp:)|(mailto:)|(gopher:)|(telnet:)|(finger:)/i) {
+				$link="=>#URL $link>";
+			} else {
+				$link=~s/\/$/\/!root/;
+				push @files,$link;
+				$link=munge($link);
+				$link="=>$link>";
 			}
-			close $handle;
+			return "<";
 		}
+#		$link=$attributes{"name"} if exists $attributes{"name"};
+#		print "$link\n";
 		return "";
-	} elsif ($command eq "fsize" and $options{"fsize"}) {
-		my @stats;
-		@stats=stat($attributes{"file"});
-		return sprintf "%dK",$stats[7]/1024;
-	} elsif ($command eq "title" and $options{"title"}) {
-		return $title;
-	} elsif ($command eq "fname" and $options{"fname"}) {
-		return $fname;
+	} elsif ($tagtype eq "/a") {
+		return $link;
+	} elsif ($tagtype eq "p") {
+		$ret="\n\n";
+		#Only add an alignment tag if alignment is different from previous paragraph
+		if (lc($attributes{"align"}) ne $align) {
+			$ret=$ret."{align";
+			if (lc($attributes{"align"}) eq "center") {
+				$ret=$ret." centre}";
+				$align="center";
+			} elsif (lc($attributes{"align"}) eq "right") {
+				$ret=$ret." right}";
+				$align="right";
+			} else {
+				$ret=$ret."}";
+				$align="left";
+			}
+		}
+		return $ret;
+	} elsif ($tagtype eq "/p") {
+		return "{align}" if $align ne "left";
+		return "";
 	} else {
-		return "$1";
+		return "";
 	}
 }
 
-sub openfile {
-	my ($filename)=$_[1];
-	if (!-e $filename) {
-		push @rcs,$filename;
-		system "co $filename";
+#Get all the attribute fields of the HTML tag and give them to sub replace as an array
+sub getattr {
+	my ($wholetag,$tagtype,$attributes)=@_;
+	my (%attributes);
+	my ($wholetemp)=$wholetag;
+	while (($wholetemp=~s/(\w+)=(("([^"]*)")|(\w+))//i)) {
+		$attributes{lc($1)}=$4.$5;
 	}
-	open($_[0],$filename) or die "Can't open $filename: $!\n";
+	return replace($wholetag,lc $tagtype,%attributes);
 }
 
-sub printfile {
-	my ($handle,$title,$fname)=@_;
-	local $_;
-	$_=$_[3];
-	while (s/(<!--#[^<>]*)((<!--[^<>]*-->)([^<>]*)){1}(.*-->)/$1.printfile($handle,$title,$fname,$3).$4.$5/eig) {}
-	s/(<!--#(\w+)$attribute$attribute$attribute$attribute\s*-->)/replace($handle,$2,$title,$fname,$5,$6,$9,$10,$13,$14,$17,$18)/eig;
-	return "$_";
+#Process the file passed as an argument
+sub processfile {
+	my ($infile,$outfile)=@_;
+	$outfile="$tempdir/$infile" if not defined $outfile;
+	my ($found)=0;
+	#Check for a suitable file extension (so we dont process .zip files or images etc.)
+	foreach (@fileextensions) {
+		$found=1 if $infile=~m/$_$/;
+	}
+	$found=not $infile=~m/[^\/]*\.[^\/]*$/ if not $found;
+	if (not $found) {
+		print "Ignoring file $infile: wrong file extension\n";
+		return;
+	}
+	if (not -e $infile) {
+		print "Cannot find file $infile, skipping\n";
+		return;
+	}
+	print "Processing file $infile...\n";
+	open("out",">".$outfile) or die "Can't open $outfile: $!\n";
+	open($handle,$infile);
+	while (<$handle>) {
+		#Remove excess whitespace
+		s/\n/ /g;
+		s/  / /g;
+		s/(<(\s*|!\W*)(\/?\w+)([^<>]*)>)/getattr($1,$3,$4)/eig;
+		#Remove more excess whitespace
+		while (s/\n\n\n/\n\n/g) {}
+		s/^\n//g;
+		print out;
+	}
+	close out;
+	print "Finshed processing $infile\n";
 }
 
+#Read in whole file in one go - removes problems with tags spanning more than one line
+undef $/;
+
+#Read command line arguments (if any)
 $infile=$ARGV[0] if $ARGV[0] ne "";
 $outfile=$ARGV[1] if $ARGV[1] ne "";
 
-print "Processing file...\n";
-open(out,">".$outfile) or die "Can't open $outfile: $!\n";
-printfile("fh00","","","<!--#template file=\"$infile\"-->");
-close out;
-foreach $filename (@rcs) {
-	print "Removing $filename\n";
-	system "rm -f $filename";
+$align="left";
+$handle="currentfile";
+
+#Check StrongHelp is loaded
+system "Set HTML2SH$Found 0";
+system "RMEnsure StrongHelp 2.70 Set HTML2SH$Found 2";
+system "RMEnsure StrongHelp 2.00 Set HTML2SH$Found 1";
+die "Please load StrongHelp 2.00 or later and try again\n" if $ENV{"HTML2SH$Found"} eq "1";
+print "You do not have the latest version of StrongHelp, I suggest you upgrade\n" if $ENV{"HTML2SH$Found"} eq "2";
+system "Unset HTML2SH$Found";
+
+#Create temporary directory
+system "cdir $tempdir";
+
+#Process the main file
+processfile($infile,$outfile);
+while (@files) {
+	#Process any file linked to from main file
+	processfile(pop @files);
 }
-
-
-#system "settype $outfile html" if $^O eq "riscos"; filename munging stops this from working
-
-print "Done\n";
+print "All files processed\n";
+print "Creating manual...\n";
+system "StrongCreate Manual";
+system "copy temp.* Manual.* ~C~DF~L~N~P~QR~S~TV";
+print "Manual created\n";
+system "Filer_Run Manual";
