@@ -47,18 +47,7 @@ inputdir is the directory containing the files to be copied
 (if ommitted, it defaults to the current directory)
 You should ensure that the wimpslot is set larger than the largest file to convert.
 
-History
-~~~~~~~
-Version 1.00 6-Feb-00
-First release
 
-Version 1.01 27-Dec-00
-Added support for some &#60; type characters as used in the PHP manual
-Now escapes \ and { if present in the HTML
-
-Version 1.02 15-Jul-02
-Various improvements to the formatting of the output, added by Matthew Phillips
-Added StrongCopy, so the entire process can be done on a Linux box.
 
 HTML2SH and StrongCopy are distributed under the GNU General Public License.
 
