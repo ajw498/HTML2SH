@@ -2,9 +2,9 @@
 	StrongCopy - Copy files from a directory to a stronghelp file
 	© Alex Waugh 2002
 
-	$Id: strongcopy.c,v 1.3 2002/07/15 20:05:24 ajw Exp $
+	$Id: strongcopy.c,v 1.4 2002/07/15 20:35:51 ajw Exp $
 
-	Usage: strongcreate [-v] [-o outputfile] [inputdir]
+	Usage: strongcopy [-v] [-o outputfile] [inputdir]
 
 	Bugs:
 	The datestamp of all files is set to 1/1/1900 when run on a non-RISC OS system
