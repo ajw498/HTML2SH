@@ -1,4 +1,10 @@
-HTML2SH is a perl script to convert HTML pages to a StrongHelp manual.
+HTML2SH and StrongCopy
+~~~~~~~~~~~~~~~~~~~~~~
+HTML2SH is a perl script to convert HTML pages to StrongHelp format.
+StrongCopy copies a directory of files into a StrongHelp file.
+Both are command line programs which will run either on RISC OS
+or GNU/Linux, and possibly other operating systems
+(although currently only on little-endian processors).
 
 What it can convert:
 Simple tags like <B>,<I>,<EM>,<PRE>,<H1> etc.
@@ -27,11 +33,18 @@ for example the PHP manual.
 Using it
 ~~~~~~~~
 Set the Current Selected Directory to the directory containing the HTML
-If the file to convert is called index.html then just double click on HTML2SH
-Otherwise at the command prompt type
-*Run ADFS::4.$.path.HTML2SH filetoconvert
-where path is the full pathname to HTML2SH
-It will then convert the file, and any files linked to from the file.
+*HTML2SH [filetoconvert]
+It will then convert the specified file, and any files linked to from the file.
+(if the filename is ommitted then it defaults to index.html)
+The files will be save in a directory named temp which is created in the
+currently selected directory.
+To create the StrongHelp manual from these converted files,
+*strongcopy [-v] [-o outputfile] [inputdir]
+-v (verbose) prints the name of each file as it is added
+output file is the name of the output stronghelp manual
+(if ommited, it defaults to Manual)
+inputdir is the directory containing the files to be copied
+(if ommitted, it defaults to the current directory)
 You should ensure that the wimpslot is set larger than the largest file to convert.
 
 History
@@ -43,8 +56,11 @@ Version 1.01 27-Dec-00
 Added support for some &#60; type characters as used in the PHP manual
 Now escapes \ and { if present in the HTML
 
+Version 1.02 15-Jul-02
+Various improvements to the formatting of the output, added by Matthew Phillips
+Added StrongCopy, so the entire process can be done on a Linux box.
 
-HTML2SH is distributed under the GNU General Public License.
+HTML2SH and StrongCopy are distributed under the GNU General Public License.
 
 Any updates should be available from http://www.alexwaugh.com/
 
