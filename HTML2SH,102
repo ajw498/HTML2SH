@@ -1,7 +1,7 @@
-#!/usr/bin/perl
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 # Version 0.01 13/11/99
+# $Revision: 1.3 $
 
 #Default files to use - can be overridden by command line arguments
 $tempdir="temp";
@@ -188,6 +188,6 @@ while (@files) {
 print "All files processed\n";
 print "Creating manual...\n";
 system "StrongCreate Manual";
-system "copy temp.* Manual.* ~C~DF~L~N~P~QR~S~TV";
+system "copy $tempdir.* Manual.* ~C~DF~L~N~P~QR~S~TV";
 print "Manual created\n";
 system "Filer_Run Manual";
