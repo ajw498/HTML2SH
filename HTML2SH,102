@@ -1,8 +1,8 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Revision: 1.12 $
-# $Date: 2000/12/28 22:26:50 $
+# $Revision: 1.13 $
+# $Date: 2002/07/12 09:11:51 $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -61,6 +61,12 @@ $spritename="p28r";
 #To stop a tag from being processed add a # character to the beggining of the appropriate line
 #Tags with a single * are processed further by the replace subroutine
 %options=(
+# MEP - added </td> and </th> converting to space and </tr> to \n to cope
+# with really simple tables slightly better, e.g. the Prev Next links in PHP
+# manual
+                "/td"           => " ",
+                "/th"           => " ",
+                "/tr"           => "\n",
 		"i"		=> "{/}",
 		"/i"		=> "{/}",
 		"b"		=> "{*}",
@@ -122,7 +128,7 @@ $spritename="p28r";
 	);
 
 #A list of named characters and their replacements
-#To stop a character from being processed add a # character to the beggining of the appropriate line
+#To stop a character from being processed add a # character to the beginning of the appropriate line
 %chars=(
 		"&lt;"		=> "\\<",
 		"&gt;"		=> ">",
@@ -309,7 +315,7 @@ sub replace {
 	} elsif ($tagtype eq "p") {
 		$ret="\n\n";
 		#Only add an alignment tag if alignment is different from previous paragraph
-		if (lc($attributes{"align"}) ne $align) {
+		if (lc($attributes{"align"}) ne $align && $attributes{"align"} ne '') {
 			$ret=$ret."{align";
 			if (lc($attributes{"align"}) eq "center") {
 				$ret=$ret." centre}";
@@ -374,8 +380,10 @@ sub processfile {
 	undef @temp;
 	while ($temp=~s/(.*)\/[^\/]*$/$1/) { push @test,$1 };
 	while (@test) {
-		$dir=munge(pop @test);
-		system "cdir $dir";
+		#$dir=munge(pop @test);
+		#system "cdir $dir";
+		$dir=pop @test;
+		mkdir $dir;
 	}
 	#Get the pathname (without leafname) for this file
 	$infile=~m/(.*\/)[^\/]*$/;
@@ -386,31 +394,70 @@ sub processfile {
 	} elsif ($html) {
 		open("out",">".$outfile) or die "Can't create $outfile: $!\n";
 		open($handle,$infile);
+		my ($t)='';
+		#Rread the whole file into one string.  Some changes do not work if done a line at a time....
 		while (<$handle>) {
-			#Escape characters that StrongHelp needs escaping
-			s/\\/\\\\/g;
-			s/\{/\\\{/g;
-			#Remove excess whitespace (except when enclosed by <pre>...</pre> tags)
-			s/(((<pre>).*(<\/pre>){1}?)*)\n(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
-			s/(((<pre>).*(<\/pre>){1}?)*)\t(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
-			s/(((<pre>).*(<\/pre>){1}?)*)  (((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
-			#Replace tags
-			s/(<(\s*|!\W*)(\/?\w+)([^<>]*)>)/getattr($1,$3,$4)/eig;
-			#Remove blank links
-			s/<=>[^>]*>//g;
-			#Remove more excess whitespace
-			while (s/\n\n\n/\n\n/) {}
-			s/^ +//mg;
-			s/^(\{[^\{\}]*\}) +/$1/mg;
-			#Replace named characters
-			s/(\&#{0,1}\w+\;)/getnamedchar($1)/eig;
-			#Remove tags inside anchors (StrongHelp does not like these)
-			while (s/<([^\{\}>]*)\{[^\{\}]*\}([^>]*)=>/<$1$2=>/) {}
-			print out;
+			$t .= $_;
 		}
+		$_=$t;
+		#Escape characters that StrongHelp needs escaping
+		s/\\/\\\\/g;
+		s/\{/\\\{/g;
+		#Remove excess whitespace (except when enclosed by <pre>...</pre> tags)
+		$t='';
+		my($aa, $bb, $dumA, $dumB);
+		while ($_) {
+			if (/<pre(\s[^>]*)?>.*<\/pre(\s[^>]*)?>/is) {
+				($aa, $bb, $dumA, $dumB, $_) = $_ =~ /^(.*?)(<pre(\s[^>]*)?>.*?<\/pre(\s[^>]*)?>)(.*)$/si;
+				$aa =~ s/\s+/ /gs;
+				$t.=$aa.$bb;
+			} else {
+				s/\s+/ /gs;
+				$t.=$_;
+				$_='';
+			}
+		}
+		$_=$t;
+		#Replace tags
+		s/(<(\s*|!\W*)(\/?\w+)([^<>]*)>)/getattr($1,$3,$4)/eig;
+		#Remove blank links
+		s/<=>[^>]*>//g;
+		#Replace named characters
+		s/(\&#{0,1}\w+\;)/getnamedchar($1)/eig;
+		#Remove more excess whitespace
+		s/\n\n\n+/\n\n/g;
+		$t='';
+		while ($_) {
+			if (/\{fcode\}.*\{f\}/is) {
+				($aa, $bb, $_) = $_ =~ /^(.*?)(\{fcode\}.*?\{f\}[^\n]*\n?)(.*)$/s;
+				$aa =~ s/^ +//gm;
+				$t.=$aa.$bb;
+			} else {
+				s/^ +//gm;
+				$t.=$_;
+				$_='';
+			}
+		}
+		$_=$t;
+		s/^(\{[^\{\}]*\}) +/$1/mg;
+		#Get rid of extra space round SH tags
+		s/ +(\{[^\{\}]*\}) +/$1 /sg;
+			
+		#Remove tags inside anchors (StrongHelp does not like these)
+		while (s/<([^\{\}>]*)\{[^\{\}]*\}([^>]*)=>/<$1$2=>/) {}
+		#Remove excess linefeeds again
+		s/\n\n\n+/\n\n/g;
+		#Sort out multiple line {fcode} blocks that don't
+		#have a line break at the start
+		s/([^\}\s](\{[^\}]*\})*\{fcode\})(\S[^\{]*\n\s*[^\{])/\1\n\3/sg;
+		print out;
 	} else {
-		my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
-		system "copy $tempinfile $tempoutfile ~C~DF~L~N~P~QR~S~TV";
+		if ($^O eq "riscos") {
+			my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
+			system "copy $tempinfile $tempoutfile ~C~DF~L~N~P~QR~S~TV";
+		} else {
+			system "cp $infile $outfile";
+		}
 	}
 	close out;
 	print "Finished processing $infile\n";
@@ -427,15 +474,16 @@ $align="left";
 $handle="currentfile";
 
 #Check StrongHelp is loaded
-system "Set HTML2SH$Found 0";
-system "RMEnsure StrongHelp 2.70 Set HTML2SH$Found 2";
-system "RMEnsure StrongHelp 2.20 Set HTML2SH$Found 1";
-die "Please load StrongHelp 2.20 or later and try again\n" if $ENV{"HTML2SH$Found"} eq "1";
-print "You do not have the latest version of StrongHelp, I suggest you upgrade\n" if $ENV{"HTML2SH$Found"} eq "2";
-system "Unset HTML2SH$Found";
+if ($^O eq "riscos") {
+	system "Set HTML2SH$Found 0";
+	system "RMEnsure StrongHelp 2.75 Set HTML2SH$Found 1";
+	die "Please load StrongHelp 2.75 or later and try again\n" if $ENV{"HTML2SH$Found"} ne "1";
+	system "Unset HTML2SH$Found";
+}
 
 #Create temporary directory
-system "cdir $tempdir";
+#system "cdir $tempdir";
+mkdir($tempdir);
 
 #Process the main file
 processfile($infile);
@@ -444,11 +492,13 @@ while (@files) {
 	processfile(pop @files);
 }
 print "All files processed\n";
-print "Creating manual...\n";
-system "StrongCreate Manual";
-system "copy $tempdir.* Manual.* ~C~DF~L~N~P~QR~S~TV";
-print "Manual created\n";
-print "Clean copying...\n";
-system "<StrongHelp$Dir>.Utilities.CleanCopy Manual";
-print "Done\n";
-system "Filer_Run Manual";
+if ($^O eq "riscos") {
+	print "Creating manual...\n";
+	system "StrongCreate Manual";
+	system "copy $tempdir.* Manual.* ~C~DF~L~N~P~QR~S~TV";
+	print "Manual created\n";
+	print "Clean copying...\n";
+	system "<StrongHelp$Dir>.Utilities.CleanCopy Manual";
+	print "Done\n";
+	system "Filer_Run Manual";
+}
