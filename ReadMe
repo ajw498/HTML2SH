@@ -43,12 +43,12 @@ Version 1.01 27-Dec-00
 Added support for some &#60; type characters as used in the PHP manual
 Now escapes \ and { if present in the HTML
 
- 
+
 HTML2SH is distributed under the GNU General Public License.
 
-Any updates should be available from http://www.ecs.soton.ac.uk/~ajw498/
+Any updates should be available from http://www.alexwaugh.com/
 
 Any comments or bug reports are welcome
 
 
-Alex Waugh  mailto:ajw498@ecs.soton.ac.uk
+Alex Waugh  alex@alexwaugh.com
