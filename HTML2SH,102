@@ -1,8 +1,8 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 #
-# $Revision: 1.13 $
-# $Date: 2002/07/12 09:11:51 $
+# $Revision: 1.14 $
+# $Date: 2002/07/14 22:45:28 $
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -383,7 +383,7 @@ sub processfile {
 		#$dir=munge(pop @test);
 		#system "cdir $dir";
 		$dir=pop @test;
-		mkdir $dir;
+		mkdir $dir,0x1FF;
 	}
 	#Get the pathname (without leafname) for this file
 	$infile=~m/(.*\/)[^\/]*$/;
@@ -483,7 +483,7 @@ if ($^O eq "riscos") {
 
 #Create temporary directory
 #system "cdir $tempdir";
-mkdir($tempdir);
+mkdir($tempdir,0x1FF); 
 
 #Process the main file
 processfile($infile);
