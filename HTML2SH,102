@@ -1,19 +1,34 @@
 # HTML to StrongHelp Perl script
 # © Alex Waugh 1999
 # Version 0.01 13/11/99
-# $Revision: 1.6 $
+# $Revision: 1.7 $
 
 #Default files to use - can be overridden by command line arguments
 $tempdir="temp";
-$infile="index.html";
+$infile="manual.html";
 $outfile="$tempdir/!root";
 
-#Only process files with the following file extensions or no extension
+#Do we include images or use the ALT text instead
+$images="no";
+
+$changefsi="<ChangeFSI\$Dir>.ChangeFSI";
+$changefsiflags="28r -nomode";
+$spritename="p28r";
+
+#Only process files with the following file extensions or no extension as html files
 #You can add or remove extensions from the list
-@fileextensions=(
+@htmlextensions=(
 		".shtml",
 		".html",
 		".htm",
+);
+
+#Only process files with the following file extensions as images
+#You can add or remove extensions from the list
+@imageextensions=(
+		".jpeg",
+		".gif",
+		".png",
 );
 
 #Filenames to treat as default pages
@@ -21,6 +36,8 @@ $outfile="$tempdir/!root";
 		"index.shtml",
 		"index.html",
 		"index.htm",
+		"index",
+		"manual.html",
 );
 
 #A list of what tags and how to replace them
@@ -52,10 +69,16 @@ $outfile="$tempdir/!root";
 		"br"		=> "\n",
 		"hr"		=> "{line}",
 		"ol"		=> "{indent +1}\n",
-		"ul"		=> "{indent +1}\n",
-		"li"		=> "\n",
 		"/ol"		=> "{indent}",
+		"ul"		=> "{indent +1}\n",
 		"/ul"		=> "{indent}",
+		"dl"		=> "{indent +1}\n",
+		"/dl"		=> "{indent}",
+		"li"		=> "\n",
+		"dt"		=> "\n",
+		"\dt"		=> "\n",
+		"dd"		=> "\n",
+		"/dd"		=> "\n",
 		"pre"		=> "{fcode}",
 		"/pre"		=> "{f}",
 		"var"		=> "{fcode}",
@@ -71,12 +94,14 @@ $outfile="$tempdir/!root";
 		"dfn"		=> "{/}",
 		"/dfn"		=> "{/}",
 		"center"	=> "{align centre}",
-		"/center"	=> "{align}",
+		"/center"	=> "\n{align}",
 		"img"		=> "*",
 		"a"		=> "*",
 		"/a"		=> "*",
 		"p"		=> "*",
 		"/p"		=> "*",
+		"div"		=> "\n",
+		"/div"		=> "\n",
 	);
 
 #A list of named characters and their replacements
@@ -84,16 +109,111 @@ $outfile="$tempdir/!root";
 %chars=(
 		"&lt;"		=> "\\<",
 		"&gt;"		=> ">",
-		"&amp;"		=> "&",
 		"&quot;"	=> "\"",
 		"&nbsp;"	=> " ",
-		"&pound;"	=> "£",
-		"&copy"		=> "©",
-		"&trade"	=> "",
-		"&reg"		=> "®",
-#		""		=> "",
-#		""		=> "",
-#		""		=> "",
+		"&AElig;"	=> "Æ",
+		"&Aacute;" 	=> "Á",
+		"&Acirc;"  	=> "Â",
+		"&Agrave;" 	=> "À",
+		"&Aring;"  	=> "Å",
+		"&Atilde;" 	=> "Ã",
+		"&Auml;"   	=> "Ä",
+		"&Ccedil;" 	=> "Ç",
+		"&Cedilla;"	=> "¸",
+		"&Eth;"    	=> "Ð",
+		"&Eacute;" 	=> "É",
+		"&Ecirc;"  	=> "Ê",
+		"&Egrave;" 	=> "È",
+		"&Euml;"   	=> "Ë",
+		"&Iacute;" 	=> "Í",
+		"&Icirc;"  	=> "Î",
+		"&Igrave;" 	=> "Ì",
+		"&Iuml;"   	=> "Ï",
+		"&Ntilde;" 	=> "Ñ",
+		"&Oacute;" 	=> "Ó",
+		"&Ocirc;"  	=> "Ô",
+		"&Ograve;" 	=> "Ò",
+		"&Oslash;" 	=> "Ø",
+		"&Otilde;" 	=> "Õ",
+		"&Ouml;"   	=> "Ö",
+		"&Thorn;"  	=> "Þ",
+		"&Uacute;" 	=> "Ú",
+		"&Ucirc;"  	=> "Û",
+		"&Ugrave;" 	=> "Ù",
+		"&Uuml;"   	=> "Ü",
+		"&Yacute;" 	=> "Ý",
+		"&aacute;" 	=> "á",
+		"&acute;"  	=> "´",
+		"&acirc;"  	=> "â",
+		"&aelig;"  	=> "æ",
+		"&agrave;" 	=> "à",
+		"&aring;"  	=> "å",
+		"&atilde;" 	=> "ã",
+		"&auml;"   	=> "ä",
+		"&brvbar;" 	=> "¦",
+		"&ccedil;" 	=> "ç",
+		"&cent;"   	=> "¢",
+		"&copy;"   	=> "©",
+		"&curren;" 	=> "¤",
+		"&degree;" 	=> "°",
+		"&die;"    	=> "¨",
+		"&divide;" 	=> "÷",
+		"&eacute;" 	=> "é",
+		"&ecirc;"  	=> "ê",
+		"&egrave;" 	=> "è",
+		"&eth;"    	=> "ð",
+		"&euml;"   	=> "ë",
+		"&frac14;" 	=> "¼",
+		"&frac12;" 	=> "½",
+		"&frac34;" 	=> "¾",
+		"&iacute;" 	=> "í",
+		"&icirc;"  	=> "î",
+		"&iexcl;"  	=> "¡",
+		"&igrave;" 	=> "ì",
+		"&iquest;" 	=> "¿",
+		"&iuml;"   	=> "ï",
+		"&laquo;"  	=> "«",
+		"&macron;" 	=> "¯",
+		"&mdash;"  	=> "˜",
+		"&ndash;"  	=> "™",
+		"&micro;"  	=> "µ",
+		"&middot;" 	=> "·",
+		"&not;"    	=> "¬",
+		"&ntilde;" 	=> "ñ",
+		"&oacute;" 	=> "ó",
+		"&ocirc;"  	=> "ô",
+		"&ograve;" 	=> "ò",
+		"&ordf;"   	=> "ª",
+		"&ordm;"   	=> "º",
+		"&oslash;" 	=> "ø",
+		"&otilde;" 	=> "õ",
+		"&ouml;"   	=> "ö",
+		"&para;"   	=> "¶",
+		"&plusmn;" 	=> "±",
+		"&pound;"  	=> "£",
+		"&raquo;"  	=> "»",
+		"&reg;"    	=> "®",
+		"&sect;"   	=> "§",
+		"&shy;"    	=> "­",
+		"&sup1;"   	=> "¹",
+		"&sup2;"   	=> "²",
+		"&sup3;"   	=> "³",
+		"&szlig;"  	=> "ß",
+		"&times;"  	=> "×",
+		"&trade;"  	=> "",
+		"&ugrave;" 	=> "ù",
+		"&uacute;" 	=> "ú",
+		"&ucirc;"  	=> "û",
+		"&uml;"    	=> "¨",
+		"&uuml;"   	=> "ü",
+		"&yacute;" 	=> "ý",
+		"&yen;"    	=> "¥",
+		"&thorn;"  	=> "þ",
+		"&yuml;"   	=> "ÿ",
+		"&ldquo;"  	=> "”",
+		"&rdquo;"  	=> "•",
+		"&lsquo;"  	=> "",
+		"&rsquo;"  	=> "‘",
 	);
 
 #Munge Unixy filenames into a suitable form for RISC OS
@@ -134,15 +254,20 @@ sub replace {
 				$link="=>#TAG $1>";
 			#Must be a relative file link
 			} else {
+print "Prefix: $prefix\n";
 				$link=$prefix.$link;
-				$old=$link;
 				$link=~s/\/$/\/!root/;
-				while ($link=~s/([^\/\.])+\/\.\.\///) {};
-				$link=~s/^\.\///;
-				$link=~s/[^\.]+\.\///g;
-				print "$old\n$link\n" if $old ne $link;
-				push @files,$link;
-				foreach (@renametoroot) {$link=~s/$_$/!Root/;}
+				while ($link=~s/([^\/\.])+\/\.\.\///) {}; #Remove dir/../
+				$link=~s/^\.\///; #Remove . at beggining of line
+				$link=~s/[^\.]+\.\///g; #?
+print "Link1: $link\n";
+				$link=~s/^([^\?]*)\?(.*)$/$1/i; #Remove parameters
+print "Link2: $link\n";
+				$linkonly=$link;
+				$linkonly=~s/^([^\#]*)\#(.*)$/$1/i; #Remove tags
+print "Link3: $linkonly\n";
+				push @files,$linkonly;
+				foreach (@renametoroot) {$link=~s/$_$/!Root/i;}
 				$link=munge($link);
 				$link="=>$link>";
 			}
@@ -153,6 +278,15 @@ sub replace {
 		return "";
 	} elsif ($tagtype eq "/a") {
 		return $link;
+	} elsif ($tagtype eq "img") {
+		if (lc $images eq "yes") {
+			return if not exists $attributes{'src'};
+			push @files,$prefix.$attributes{'src'};
+			$spritefile=munge($attributes{'src'});
+			return "{spritefile $spritefile}{sprite f,f $spritename}"
+		} else {
+			return $attributes{"alt"};
+		}
 	} elsif ($tagtype eq "p") {
 		$ret="\n\n";
 		#Only add an alignment tag if alignment is different from previous paragraph
@@ -193,28 +327,31 @@ sub getattr {
 sub processfile {
 	my ($infile,$outfile)=@_;
 	$outfile="$tempdir/$infile" if not defined $outfile;
-	my ($found)=0;
+	my ($html,$image)=0,0;
         #Remove any tag after the filename
-        $infile=~s/([^#]*)#.*/$1/;
-	#Check for a suitable file extension (so we dont process .zip files or images etc.)
-	my ($temp)=$infile;
-	foreach (@fileextensions) {
-		$found=1 if $temp=~m/$_$/;
-	}
-	#If it does not have a suitable extension, check to see if it has no extension
-	$found=not $temp=~m/[^\/]*\.[^\/]*$/ if not $found;
-	if (not $found) {
-		print "Ignoring file $infile: wrong file extension\n";
-		return;
-	}
+if ($infile=~m/\?/) {die "Asked to process $infile";}
+if ($infile=~m/\#/) {die "Asked to process $infile";}
+#        $infile=~s/([^#\?]*)[#\?].*/$1/g;
 	#Rename indexes to !Roots
-	foreach (@renametoroot) {$outfile=~s/$_$/!Root/;}
+	foreach (@renametoroot) {$outfile=~s/$_$/!Root/i;}
 	#Check that we have not already processed this file
 	return if -e $outfile;
 	#Check we can find the file
 	if (not -e $infile) {
 		print "Cannot find file $infile, skipping\n";
 		return;
+	}
+	#Check for a suitable file extension (so we dont process .zip files or images etc.)
+	my ($temp)=$infile;
+	foreach (@htmlextensions) {
+		$html=1 if $temp=~m/$_$/i;
+	}
+	#If it does not have a suitable extension, check to see if it has no extension
+	$html=not $temp=~m/[^\/]*\.[^\/]*$/ if not $html;
+	if (not $html) {
+		foreach (@imageextensions) {
+			$image=1 if $temp=~m/$_$/i;
+		}
 	}
 	print "Processing file $infile...\n";
 	#Create any subdirectories needed
@@ -228,22 +365,35 @@ sub processfile {
 	#Get the pathname (without leafname) for this file
 	$infile=~m/(.*\/)[^\/]*$/;
 	$prefix=$1;
-	open("out",">".$outfile) or die "Can't create $outfile: $!\n";
-	open($handle,$infile);
-	while (<$handle>) {
-		#Remove excess whitespace (except when enclosed by <pre>...</pre> tags)
-		s/(((<pre>).*(<\/pre>){1}?)*)\n(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
-		s/(((<pre>).*(<\/pre>){1}?)*)\t(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
-		s/(((<pre>).*(<\/pre>){1}?)*)  (((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
-		#Replace tags
-		s/(<(\s*|!\W*)(\/?\w+)([^<>]*)>)/getattr($1,$3,$4)/eig;
-		#Remove more excess whitespace
-		while (s/\n\n\n/\n\n/) {}
-		s/^ +//mg;
-		s/^({[^{}]*}) +/$1/mg;
-		#Replace named characters
-		s/(\&\w+\;)/getnamedchar($1)/eig;
-		print out;
+if ($prefix ne "") {die "Prefix is $Prefix from file $infile\n";}
+	if ($image) {
+		my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
+		system "$changefsi $tempinfile $tempoutfile $changefsiflags";
+	} elsif ($html) {
+		open("out",">".$outfile) or die "Can't create $outfile: $!\n";
+		open($handle,$infile);
+		while (<$handle>) {
+			#Remove excess whitespace (except when enclosed by <pre>...</pre> tags)
+			s/(((<pre>).*(<\/pre>){1}?)*)\n(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
+			s/(((<pre>).*(<\/pre>){1}?)*)\t(((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
+			s/(((<pre>).*(<\/pre>){1}?)*)  (((<pre>).*(<\/pre>){1}?)*)/$1 $5/sig;
+			#Replace tags
+			s/(<(\s*|!\W*)(\/?\w+)([^<>]*)>)/getattr($1,$3,$4)/eig;
+			#Remove blank links
+			s/<=>[^>]*>//g;
+			#Remove more excess whitespace
+			while (s/\n\n\n/\n\n/) {}
+			s/^ +//mg;
+			s/^(\{[^\{\}]*\}) +/$1/mg;
+			#Replace named characters
+			s/(\&\w+\;)/getnamedchar($1)/eig;
+			#Remove tags inside anchors (StrongHelp does not like these)
+			while (s/<([^\{\}>]*)\{.*\}([^>]*)=>/<$1$2=>/) {}
+			print out;
+		}
+	} else {
+		my ($tempinfile,$tempoutfile)=(munge($infile),munge($outfile));
+		system "copy $tempinfile $tempoutfile ~C~DF~L~N~P~QR~S~TV";
 	}
 	close out;
 	print "Finshed processing $infile\n";
