@@ -1,0 +1,66 @@
+# Rename function/name/html to name
+# Alex Waugh 2000
+# Version 0.01 27/1/00
+
+
+#Default directory to use - can be overridden by command line argument
+$indir=".";
+
+sub process {
+	my($infile)=$_[0];
+	print "Proccesing $infile\n";
+	if ($infile=~m/function\.([^\/]{1,})\.html$/i) {
+		$finalfile=$1;
+		$finalfile=~s/\-/\_/g;
+	} else {
+		$finalfile=$infile;
+	}
+	$outfile=$finalfile."X";
+	print "$outfile\n";
+	open(in,$infile);
+	open(out,">$outfile");
+	while (<in>) {
+		while (s/function\.([^\.]+)\.html/maGic/i) {
+			$name=$1;
+			$name=~s/\-/\_/g;
+			s/maGic/$name/;
+		}
+		print out;
+	}
+	close in;
+	close out;
+	system "rm $infile";
+	system "mv $outfile $finalfile";
+}
+
+#Do the business
+sub munge {
+	my ($filename)=$_[0];
+	my ($pathname,$leafname);
+	$filename=~s/\.\./\^/g;
+	$filename=~s/^\.\///g;
+	$filename=~s/\// /g;
+	$filename=~s/\./\//g;
+	$filename=~s/\ /\./g;
+	return if not $filename=~m/function\/([^\/]{1,})\/html$/i;
+	$leafname=$1;
+	$leafname=~s/\-/\_/g;
+	print "Renaming $filename\n";
+	system "Rename $filename $leafname";
+}
+
+#Read in whole file in one go - removes problems with tags spanning more than one line
+undef $/;
+
+#Read command line arguments (if any)
+$indir=$ARGV[0] if $ARGV[0] ne "";
+
+opendir(DIR,$indir) or die "Cannot open directory: $!\n";
+@entries=grep(!/^[\.]+$/,readdir(DIR));
+closedir DIR;
+foreach (@entries) {
+	process("$_");
+	munge("$_");
+}
+
+print "Done\n";
