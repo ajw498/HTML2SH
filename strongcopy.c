@@ -2,7 +2,7 @@
 	StrongCopy - Copy files from a directory to a stronghelp file
 	© Alex Waugh 2002
 
-	$Id: strongcopy.c,v 1.4 2002/07/15 20:35:51 ajw Exp $
+	$Id$
 
 	Usage: strongcopy [-v] [-o outputfile] [inputdir]
 
