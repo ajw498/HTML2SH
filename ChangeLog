@@ -1,3 +1,6 @@
+v1.05 2-Nov-05
+Fixed checking of StrongHelp version, as this was failing on recent versions of Perl.
+
 v1.04 11-Oct-04
 Strips out newlines inside links, as these cause StrongHelp problems.
 

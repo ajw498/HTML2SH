@@ -469,10 +469,7 @@ $handle="currentfile";
 
 #Check StrongHelp is loaded
 if ($^O eq "riscos") {
-	system "Set HTML2SH$Found 0";
-	system "RMEnsure StrongHelp 2.75 Set HTML2SH$Found 1";
-	die "Please load StrongHelp 2.75 or later and try again\n" if $ENV{"HTML2SH$Found"} ne "1";
-	system "Unset HTML2SH$Found";
+	if ((system('RMEnsure StrongHelp 2.75 Error Please load StrongHelp 2.75 or later and try again')) != 0) { exit 1; }
 }
 
 #Create temporary directory
